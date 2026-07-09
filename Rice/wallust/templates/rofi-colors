@@ -1,0 +1,16 @@
+* {
+    /* Variables de Wallust */
+    background: {{background}};
+    foreground: {{foreground}};
+    color1: {{color1}};
+    color2: {{color2}};
+    color4: {{color4}};
+
+    /* TRADUCCIÓN CON FILTRO ANTI-CAFÉ */
+    bg:  @background;
+    fg:  @foreground;
+    ac:  @color4;
+    bar: @foreground;
+    bga: #0a192f;
+    al:  #00000000;
+}

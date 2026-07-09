@@ -1,0 +1,12 @@
+# Colores generados dinámicamente por Wallust
+set $bg      #070300
+set $fg      #FFFF22
+set $accent  #789EE0
+set $urgent  #A2535A
+set $inactive #AAA400
+
+# client.<estado> <borde> <fondo> <texto> <indicador> <borde-hijo>
+client.focused          $accent  $accent  $fg      #FCF509   $accent
+client.focused_inactive $inactive $inactive $fg    #AAA400   $inactive
+client.unfocused        $bg      $bg      $inactive #AAA400  $bg
+client.urgent           $urgent  $urgent  $fg      #9E9E0E   $urgent

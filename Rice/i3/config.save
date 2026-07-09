@@ -1,0 +1,178 @@
+et $mod Mod4
+
+# --- FUENTE (Aquí cambias el tamaño de letra de la barra y ventanas) ---
+font pango:monospace 18
+
+# --- ESTÉTICA (Gaps y Bordes) ---
+for_window [class=".*"] border pixel 0
+gaps outer 10
+gaps inner 20
+
+# --- AUTOSTART ---
+exec_always --no-startup-id feh --bg-fill --randomize ~/Pictures/Fondos/*
+exec --no-startup-id xsettingsd &
+exec_always --no-startup-id picom --config ~/.config/picom/picom.conf -b
+exec --no-startup-id nm-applet
+exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
+# portapales
+exec --no-startup-id copyq
+#for_window [class="copyq"] floating enable, resize set 50 #ppt 50 ppt, move position 50 ppt 50 ppt
+for_window [class="copyq"]floating enable, resize set 30 ppt 30 ppt, move position 70 ppt 70 ppt
+#Portapales
+bindsym $mod+Shift+v exec --no-startup-id copyq toggle
+
+# Idiomas
+# Cambiar a teclado Inglés (US)
+bindsym $mod+Shift+u exec "setxkbmap us"
+
+# Cambiar a teclado Español (con Ñ)
+bindsym $mod+Shift+i exec "setxkbmap es"
+exec --no-startup-id setxkbmap us
+
+# --- ATAJOS MULTIMEDIA (Recuperados del config anterior) ---
+set $refresh_i3status killall -SIGUSR1 i3status
+bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +10% && $refresh_i3status
+bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -10% && $refresh_i3status
+bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
+bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
+
+# --- LANZADORES Y TERMINAL ---
+# Cambio de Kitty a Alacritty
+bindsym $mod+Return exec kitty
+
+# Lanzador Rofi (Estilo actual)
+bindsym $mod+d exec rofi -lines 12 -padding 18 -width 60 -location 0 -show drun -sidebar-mode -columns 
+
+# Captura de pantalla
+bindsym $mod+Shift+p exec maim -u ~/$(date +%s).png
+
+# Activar/Desactivar Caffeine 
+bindsym $mod+Shift+x exec --no-startup-id /home/brams/.config/i3/scripts/caffeine.sh --toggle
+# --- NAVEGACIÓN Y VENTANAS ---
+floating_modifier $mod
+tiling_drag modifier titlebar
+
+bindsym $mod+Shift+q kill
+
+# Foco (Teclas jkl;)
+bindsym $mod+j focus left
+bindsym $mod+k focus down
+bindsym $mod+l focus up
+bindsym $mod+semicolon focus right
+# Flechas
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+# Mover ventanas
+bindsym $mod+Shift+j move left
+bindsym $mod+Shift+k move down
+bindsym $mod+Shift+l move up
+bindsym $mod+Shift+semicolon move right
+
+# Splits y Layouts
+bindsym $mod+h split h
+bindsym $mod+v split v
+bindsym $mod+f fullscreen toggle
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+space focus mode_toggle
+bindsym $mod+a focus parent
+
+# Relativas 
+# Esquina Superior Izquierda
+bindsym Mod4+Shift+Left  floating enable; resize set 50 ppt 50 ppt; move position 0 px 0 px
+
+# Esquina Superior Derecha
+bindsym Mod4+Shift+Up    floating enable; resize set 50 ppt 50 ppt; move position 50 ppt 0 px
+
+# Esquina Inferior Izquierda
+bindsym Mod4+Shift+Down  floating enable; resize set 50 ppt 50 ppt; move position 0 px 50 ppt
+
+# Esquina Inferior Derecha
+bindsym Mod4+Shift+Right floating enable; resize set 50 ppt 50 ppt; move position 50 ppt 50 ppt
+# --- WORKSPACES ---
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+set $ws10 "10"
+
+bindsym $mod+1 workspace number $ws1
+bindsym $mod+2 workspace number $ws2
+bindsym $mod+3 workspace number $ws3
+bindsym $mod+4 workspace number $ws4
+bindsym $mod+5 workspace number $ws5
+bindsym $mod+6 workspace number $ws6
+bindsym $mod+7 workspace number $ws7
+bindsym $mod+8 workspace number $ws8
+bindsym $mod+9 workspace number $ws9
+bindsym $mod+0 workspace number $ws10
+
+bindsym $mod+Shift+1 move container to workspace number $ws1
+bindsym $mod+Shift+2 move container to workspace number $ws2
+bindsym $mod+Shift+3 move container to workspace number $ws3
+bindsym $mod+Shift+4 move container to workspace number $ws4
+bindsym $mod+Shift+5 move container to workspace number $ws5
+bindsym $mod+Shift+6 move container to workspace number $ws6
+bindsym $mod+Shift+7 move container to workspace number $ws7
+bindsym $mod+Shift+8 move container to workspace number $ws8
+bindsym $mod+Shift+9 move container to workspace number $ws9
+bindsym $mod+Shift+0 move container to workspace number $ws10
+
+# --- SISTEMA ---
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+r restart
+bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit i3' 'i3-msg exit'"
+# --- MODO RESIZE CORREGIDO (Estilo Vim universal) ---
+mode "resize" {
+    # Letras (h = izquierda, j = abajo, k = arriba, l = derecha)
+    bindsym h resize shrink width 10 px or 10 ppt
+    bindsym j resize grow height 10 px or 10 ppt
+    bindsym k resize shrink height 10 px or 10 ppt
+    bindsym l resize grow width 10 px or 10 ppt
+
+    # Flechas del teclado (Como respaldo)
+    bindsym Left  resize shrink width 10 px or 10 ppt
+    bindsym Down  resize grow height 10 px or 10 ppt
+    bindsym Up    resize shrink height 10 px or 10 ppt
+    bindsym Right resize grow width 10 px or 10 ppt
+
+    # Salir del modo
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+    bindsym $mod+r mode "default"
+}
+bindsym $mod+r mode "resize"
+
+
+# --- BARRA Y COLORES ---
+set $bg-color            #000000
+set $inactive-bg-color   #000000
+set $text-color          #f3f4f5
+set $inactive-text-color #676E7D
+set $urgent-bg-color     #E53935
+
+# bar {
+#    status_command i3blocks
+#    colors {
+#        background $bg-color
+#        separator #757575
+#        focused_workspace  $bg-color  $bg-color  $text-color
+#        inactive_workspace $inactive-bg-color $inactive-bg-color $inactive-text-color
+#       urgent_workspace   $urgent-bg-color   $urgent-bg-color   $text-color
+#    }
+#}
+
+# --- REGLAS DE VENTANAS ---
+for_window [window_type="dialog"] floating enable
+for_window [window_type="menu"] floating disable
+for_window [window_type="utility"] floating disable

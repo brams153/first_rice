@@ -1,0 +1,8 @@
+foreground           {{foreground}}
+background           {{background}}
+cursor               {{color4}}
+selection_background {{foreground}}
+selection_foreground {{foreground}}
+color8               {{foreground}}
+
+# color8               {{color4}}

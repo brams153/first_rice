@@ -1,0 +1,8 @@
+[color]
+background      = {{background}}
+foreground      = {{foreground}}
+foreground-alt  = {{color1}}
+module-fg       = {{background}}
+primary         = {{color4}}
+secondary       = {{color4}}
+alternate       = {{color1}}

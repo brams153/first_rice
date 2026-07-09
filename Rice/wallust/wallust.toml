@@ -1,0 +1,29 @@
+# ~/.config/wallust/wallust.toml
+# Configuración optimizada para Wallust v3.5
+
+# --- Extracción de color ---
+backend = "fastresize"
+color_space = "salience"
+palette = "saliencedark"
+# palette="dracula"
+
+
+saturation = 1
+filter = "none"
+#check_contrast = false
+check_contrast = true
+# --- Plantillas ---
+# IMPORTANTE: nunca uses "~" aquí, Wallust v3.5 no expande tilde
+# y falla con "os error 2" (No such file or directory).
+[templates]
+i3      = { template = 'i3-colors',      target = '/home/brams/.config/i3/wallust-colors' }
+kitty   = { template = 'kitty-colors',   target = '/home/brams/.config/kitty/wallust-colors.conf' }
+polybar = { template = 'polybar-colors', target = '/home/brams/.config/polybar/material/wallust-colors.ini' }
+rofi = { template = 'rofi-colors', target = '/home/brams/.config/polybar/material/scripts/rofi/colors.rasi' }
+# --- Hooks ---
+[hooks]
+on_change = "kitty @ --to=unix:@mykitty set-colors -a -c /home/brams/.config/kitty/wallust-colors.conf && pkill polybar || true && polybar main &"
+[thresholds]
+# Sube el contraste o la saturación mínima para ignorar tonos pasteles/cafés oscuros
+low_space = 25
+high_space = 85

@@ -1,0 +1,5 @@
+foreground {{foreground}}
+background {{background}}
+cursor     {{color4}}
+selection_background {{color1}}
+selection_foreground {{foreground}}

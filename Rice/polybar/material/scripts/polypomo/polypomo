@@ -1,0 +1,296 @@
+#!/usr/bin/env lua
+local socket = require("socket")
+local unix = require("socket.unix")
+-- Cargamos lsqlite3 de forma segura (por si no se usa la opción --saveto)
+local has_sqlite3, sqlite3 = pcall(require, "lsqlite3")
+
+local SOCKDIR = os.getenv("XDG_RUNTIME_DIR") or "/var/tmp"
+local SOCKFILE = SOCKDIR .. "/polypomo.sock"
+
+local TOMATO = "🍅"
+local BREAK = "🏖️"
+local PAUSE = "⏸️"
+
+------------------------------------------------------------------------
+-- Clase Timer
+------------------------------------------------------------------------
+local Timer = {}
+Timer.__index = Timer
+
+function Timer:new(remtime)
+	local obj = {
+		time = remtime,
+		notified = false,
+		previous = socket.gettime(),
+	}
+	setmetatable(obj, self)
+	return obj
+end
+
+function Timer:tick()
+	self.previous = socket.gettime()
+end
+
+function Timer:format_time()
+	local day_factor = 86400
+	local hour_factor = 3600
+	local minute_factor = 60
+
+	local rem = self.time
+	local neg = ""
+	if rem < 0 then
+		rem = -rem
+		neg = "-"
+	end
+
+	local days = math.floor(rem / day_factor)
+	rem = rem - (days * day_factor)
+	local hours = math.floor(rem / hour_factor)
+	rem = rem - (hours * hour_factor)
+	local minutes = math.floor(rem / minute_factor)
+	rem = rem - (minutes * minute_factor)
+	local seconds = math.floor(rem)
+
+	local strtime = {}
+	if days > 0 then
+		table.insert(strtime, tostring(days))
+	end
+	if days > 0 or hours > 0 then
+		table.insert(strtime, string.format("%02d", hours))
+	end
+
+	table.insert(strtime, string.format("%02d", minutes))
+	table.insert(strtime, string.format("%02d", seconds))
+
+	return neg .. table.concat(strtime, ":")
+end
+
+function Timer:__tostring()
+	return self:format_time()
+end
+
+function Timer:update()
+	local now = socket.gettime()
+	local delta = now - self.previous
+	self.time = self.time - delta
+
+	-- Enviar notificación cuando llegue a 0
+	if not self.notified and self.time < 0 then
+		self.notified = true
+		os.execute("notify-send -t 0 -u critical 'Pomodoro' 'Timer reached zero' >/dev/null 2>&1")
+	end
+end
+
+function Timer:change(op, seconds)
+	if op == "add" then
+		self.time = self.time + seconds
+	else
+		self.time = self.time - seconds
+	end
+end
+
+------------------------------------------------------------------------
+-- Clase Status
+------------------------------------------------------------------------
+local Status = {}
+Status.__index = Status
+
+function Status:new(worktime, breaktime, saveto)
+	local obj = {
+		worktime = worktime,
+		breaktime = breaktime,
+		status = "work",
+		active = false,
+		locked = true,
+		saveto = saveto,
+	}
+	setmetatable(obj, self)
+	obj.timer = Timer:new(worktime)
+	return obj
+end
+
+function Status:show()
+	local st = (self.status == "work") and TOMATO or BREAK
+	if not self.active then
+		st = PAUSE
+	end
+	io.write(string.format("%s %s\n", st, tostring(self.timer)))
+	io.flush()
+end
+
+function Status:save(is_start)
+	if not self.saveto or not has_sqlite3 then
+		return
+	end
+	local db = sqlite3.open(self.saveto)
+	if db then
+		db:exec("CREATE TABLE IF NOT EXISTS sessions (date text, start text, stop text)")
+		if is_start then
+			db:exec("INSERT INTO sessions VALUES (date('now'), time('now'), NULL)")
+		else
+			db:exec([[
+                UPDATE sessions
+                SET stop = time('now')
+                WHERE start IN (
+                    SELECT start FROM sessions
+                    ORDER BY start DESC
+                    LIMIT 1
+                )
+            ]])
+		end
+		db:close()
+	end
+end
+
+function Status:toggle()
+	self.active = not self.active
+	if self.saveto and self.status == "work" then
+		self:save(self.active)
+	end
+end
+
+function Status:toggle_lock()
+	self.locked = not self.locked
+end
+
+function Status:update()
+	if self.active then
+		self.timer:update()
+	end
+	self.timer:tick()
+end
+
+function Status:change(op, seconds)
+	if self.locked then
+		return
+	end
+	self.timer:change(op, tonumber(seconds))
+end
+
+function Status:next_timer()
+	if self.status == "work" then
+		if self.active then
+			self.active = false
+			self:save(false)
+		end
+		self.status = "break"
+		self.timer = Timer:new(self.breaktime)
+	elseif self.status == "break" then
+		self.active = false
+		self.status = "work"
+		self.timer = Timer:new(self.worktime)
+	end
+end
+
+------------------------------------------------------------------------
+-- IPC (Sockets de dominio Unix)
+------------------------------------------------------------------------
+local function send_msg(msg)
+	local client = unix.dgram()
+	local success, err = client:sendto(msg, SOCKFILE)
+	if not success then
+		print("No instance of polypomo listening, error: " .. tostring(err))
+	end
+	client:close()
+end
+
+local function action_display(worktime, breaktime, saveto)
+	local status = Status:new(worktime, breaktime, saveto)
+
+	-- Limpiar socket anterior si existe
+	os.remove(SOCKFILE)
+
+	local server = unix.dgram()
+	local ok, err = server:bind(SOCKFILE)
+	if not ok then
+		print("Failed to bind socket: " .. tostring(err))
+		os.exit(1)
+	end
+
+	while true do
+		status:show()
+		status:update()
+
+		-- Usamos select para no bloquear el hilo (timeout de 0.2s)
+		local recvt, _, _ = socket.select({ server }, nil, 0.2)
+		if recvt and #recvt > 0 then
+			local data = server:receive()
+			if data then
+				if data == "toggle" then
+					status:toggle()
+				elseif data == "end" then
+					status:next_timer()
+				elseif data == "lock" then
+					status:toggle_lock()
+				elseif data:match("^time ") then
+					local op_sign, secs = data:match("^time ([+-])(%d+)")
+					if op_sign and secs then
+						local op = (op_sign == "+") and "add" or "sub"
+						status:change(op, secs)
+					end
+				elseif data == "exit" then
+					print("Received exit request...")
+					break
+				end
+			end
+		end
+	end
+
+	server:close()
+	os.remove(SOCKFILE)
+end
+
+------------------------------------------------------------------------
+-- Main / CLI Parser
+------------------------------------------------------------------------
+local function main()
+	local args = arg
+	local cmd = nil
+	local worktime = 25 * 60
+	local breaktime = 3 * 60
+	local saveto = nil
+
+	-- Parseo de argumentos manual (para evitar dependencias externas como argparse)
+	local i = 1
+	while i <= #args do
+		local arg = args[i]
+		if arg == "--worktime" then
+			i = i + 1
+			worktime = tonumber(args[i]) or worktime
+		elseif arg == "--breaktime" then
+			i = i + 1
+			breaktime = tonumber(args[i]) or breaktime
+		elseif arg == "--saveto" then
+			i = i + 1
+			saveto = args[i]
+		elseif arg:match("^[^-]") and not cmd then
+			cmd = arg
+			if cmd == "time" then
+				i = i + 1
+				local delta = args[i]
+				if delta then
+					send_msg("time " .. delta)
+				end
+				return
+			end
+		end
+		i = i + 1
+	end
+
+	if cmd == "toggle" then
+		send_msg("toggle")
+	elseif cmd == "end" then
+		send_msg("end")
+	elseif cmd == "lock" then
+		send_msg("lock")
+	elseif cmd == "exit" then
+		send_msg("exit")
+		os.execute("sleep 0.5") -- Dar tiempo a que el servidor cierre el socket
+	elseif not cmd then
+		action_display(worktime, breaktime, saveto)
+	else
+		print("Unknown command: " .. tostring(cmd))
+	end
+end
+
+main()

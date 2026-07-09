@@ -1,0 +1,12 @@
+# Colores generados dinámicamente por Wallust
+set $bg      {{background}}
+set $fg      {{foreground}}
+set $accent  {{color4}}
+set $urgent  {{color1}}
+set $inactive {{color8}}
+
+# client.<estado> <borde> <fondo> <texto> <indicador> <borde-hijo>
+client.focused          $accent  $accent  $fg      {{color6}}   $accent
+client.focused_inactive $inactive $inactive $fg    {{color8}}   $inactive
+client.unfocused        $bg      $bg      $inactive {{color8}}  $bg
+client.urgent           $urgent  $urgent  $fg      {{color3}}   $urgent

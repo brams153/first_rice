@@ -1,0 +1,6 @@
+* {
+    background: #000201;
+    foreground: #FFB090;
+    color1: #20201C;
+    color8: #BE6449;
+}
