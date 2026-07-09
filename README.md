@@ -1,14 +1,8 @@
 # 🍚 brams153-first_rice
 Welcome to my very first rice! This repository contains my personal dotfiles, featuring a fully customized, dynamic, and aesthetic desktop environment built around **i3wm**. It includes dynamic color generation based on wallpapers, smooth blur effects, and custom scripts for a better workflow.
 ### 🎥 Showcase
-> **Watch the video tour here:** > 
-> Video Showcase
-> <video width="640" height="360" controls>
-  <source src="rice.mp4" type="rice/mp4">
-  Tu navegador no soporta el tag de video.
-</video>
 
-> 
+! [rice] (rice.mp4)
 ## 🛠️ Tools & Dependencies
 Here is a breakdown of the core components used to build this setup:
 | Category | Tool | Description |
